@@ -19,9 +19,10 @@ export type SessionPayload = {
 /**
  * Reads and validates `SESSION_SECRET`. The app refuses to sign or verify
  * sessions without a secret of at least 32 bytes, rather than silently
- * accepting forgeable cookies.
+ * accepting forgeable cookies. Also called from `instrumentation.ts` so an
+ * invalid configuration stops the server before it serves any request.
  */
-function getSecret(): string {
+export function assertSessionSecret(): string {
   const secret = process.env.SESSION_SECRET;
   if (!secret) {
     throw new Error("SESSION_SECRET is not set");
@@ -33,7 +34,9 @@ function getSecret(): string {
 }
 
 function sign(payload: string): string {
-  return createHmac("sha256", getSecret()).update(payload).digest("base64url");
+  return createHmac("sha256", assertSessionSecret())
+    .update(payload)
+    .digest("base64url");
 }
 
 /** Creates a signed session token that expires at `exp` (default: in 7 days). */

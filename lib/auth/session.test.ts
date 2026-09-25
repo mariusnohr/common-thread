@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  assertSessionSecret,
   createSessionToken,
   SESSION_COOKIE_NAME,
   SESSION_MAX_AGE_SECONDS,
@@ -77,6 +78,29 @@ describe("session tokens", () => {
   it("refuses to sign when the secret is too short", () => {
     process.env.SESSION_SECRET = "short";
     expect(() => createSessionToken()).toThrow(/32 bytes/);
+  });
+});
+
+describe("assertSessionSecret", () => {
+  const originalSecret = process.env.SESSION_SECRET;
+
+  afterEach(() => {
+    process.env.SESSION_SECRET = originalSecret;
+  });
+
+  it("returns the secret when it is long enough", () => {
+    process.env.SESSION_SECRET = SECRET;
+    expect(assertSessionSecret()).toBe(SECRET);
+  });
+
+  it("throws when the secret is missing", () => {
+    delete process.env.SESSION_SECRET;
+    expect(() => assertSessionSecret()).toThrow(/SESSION_SECRET is not set/);
+  });
+
+  it("throws when the secret is too short", () => {
+    process.env.SESSION_SECRET = "short";
+    expect(() => assertSessionSecret()).toThrow(/at least 32 bytes/);
   });
 });
 
