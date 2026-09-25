@@ -1,9 +1,21 @@
-# common-thread
+# Floke
 
-Et daglig ordpuslespill: seksten ord, fire skjulte grupper på fire ord, tre
-oppgaver per dag (lett, middels og vanskelig). Siden serverer dagens oppgaver
-fra Postgres og sjekker alle gjetninger på serveren, så gruppeinndelingen
-aldri sendes til nettleseren.
+Et daglig ordpuslespill (repo: `common-thread`): seksten ord, fire skjulte
+grupper på fire ord, tre oppgaver per dag (lett, middels og vanskelig). Siden
+serverer dagens oppgaver fra Postgres og sjekker alle gjetninger på serveren,
+så gruppeinndelingen aldri sendes til nettleseren.
+
+## Spillet
+
+- Spilleren har **tre liv**. En feil koster ett liv, og tre av fire riktige
+  gir beskjed om «én unna». Samme gjetning to ganger koster ingenting.
+- Liv som er igjen blir til stjerner (feilfritt gir tre).
+- Fremgang, resultater, stjerner og rekke (dager på rad med minst én løst
+  oppgave) lagres bare i nettleseren (`localStorage`, `lib/game/storage.ts`).
+- «Del resultatet» lager et rutenett i farger uten å avsløre ordene
+  (`lib/game/score.ts`).
+- Navnet på spillet står ett sted: `APP_NAME` i `lib/brand.ts`.
+- Animasjonene respekterer `prefers-reduced-motion`.
 
 ## Kom i gang
 

@@ -7,6 +7,7 @@ import {
   type LanguageModel,
 } from "ai";
 import { z } from "zod";
+import { APP_NAME } from "@/lib/brand";
 import { puzzleSchema } from "@/lib/puzzle/schema";
 import type {
   Difficulty,
@@ -242,7 +243,7 @@ export async function generatePuzzle({
         output: Output.object({
           schema: generatedPuzzleSchema,
           name: "puzzle",
-          description: "A Common Thread puzzle: four groups of four words.",
+          description: `A ${APP_NAME} puzzle: four groups of four words.`,
         }),
         timeout: timeoutMs,
       });

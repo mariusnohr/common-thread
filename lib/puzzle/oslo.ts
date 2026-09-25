@@ -27,3 +27,32 @@ export function addDays(isoDate: string, days: number): string {
     .toISOString()
     .slice(0, 10);
 }
+
+/**
+ * Seconds left of the current Oslo day, i.e. until the next puzzles appear.
+ * Ignores the one hour gained or lost on the two daylight-saving nights.
+ */
+export function secondsUntilOsloMidnight(now: Date = new Date()): number {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Oslo",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(now);
+  const get = (type: Intl.DateTimeFormatPartTypes): number =>
+    Number(parts.find((part) => part.type === type)?.value ?? 0);
+  const elapsed = get("hour") * 3600 + get("minute") * 60 + get("second");
+  return Math.max(0, 86_400 - elapsed);
+}
+
+/** A Norwegian day label for an ISO date, e.g. `fredag 25. september`. */
+export function formatNorwegianDay(isoDate: string): string {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  return new Intl.DateTimeFormat("nb-NO", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(year, month - 1, day, 12)));
+}
