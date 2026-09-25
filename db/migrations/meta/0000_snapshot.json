@@ -1,0 +1,169 @@
+{
+  "id": "c0610645-83f9-42b8-b717-8d36098780d9",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.puzzle_groups": {
+      "name": "puzzle_groups",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "puzzle_id": {
+          "name": "puzzle_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "difficulty": {
+          "name": "difficulty",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "words": {
+          "name": "words",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "puzzle_groups_puzzle_id_puzzles_id_fk": {
+          "name": "puzzle_groups_puzzle_id_puzzles_id_fk",
+          "tableFrom": "puzzle_groups",
+          "tableTo": "puzzles",
+          "columnsFrom": [
+            "puzzle_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "puzzle_groups_puzzle_difficulty_unique": {
+          "name": "puzzle_groups_puzzle_difficulty_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "puzzle_id",
+            "difficulty"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "puzzle_groups_difficulty_check": {
+          "name": "puzzle_groups_difficulty_check",
+          "value": "\"puzzle_groups\".\"difficulty\" BETWEEN 1 AND 4"
+        },
+        "puzzle_groups_words_cardinality_check": {
+          "name": "puzzle_groups_words_cardinality_check",
+          "value": "cardinality(\"puzzle_groups\".\"words\") = 4"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.puzzles": {
+      "name": "puzzles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "publish_date": {
+          "name": "publish_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "puzzle_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'suggested'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "puzzles_approved_publish_date_idx": {
+          "name": "puzzles_approved_publish_date_idx",
+          "columns": [
+            {
+              "expression": "publish_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"puzzles\".\"status\" = 'approved'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "puzzles_publish_date_unique": {
+          "name": "puzzles_publish_date_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "publish_date"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.puzzle_status": {
+      "name": "puzzle_status",
+      "schema": "public",
+      "values": [
+        "suggested",
+        "draft",
+        "approved"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

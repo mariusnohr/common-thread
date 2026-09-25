@@ -1,0 +1,158 @@
+:root {
+  color-scheme: dark;
+  --bg: #101418;
+  --panel: #1a2129;
+  --border: #2c3742;
+  --text: #eef2f5;
+  --muted: #9aa7b2;
+  --accent: #f5c451;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.shell {
+  margin: 0 auto;
+  max-width: 640px;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+.date {
+  margin: 0.25rem 0 1.5rem;
+  color: var(--muted);
+}
+
+.empty {
+  padding: 2rem;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.group {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.6rem 0.9rem;
+  background: var(--panel);
+}
+
+.group h2 {
+  margin: 0 0 0.2rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.group p {
+  margin: 0;
+  font-weight: 600;
+}
+
+.difficulty-1 {
+  border-left: 4px solid #6bbf59;
+}
+.difficulty-2 {
+  border-left: 4px solid #f5c451;
+}
+.difficulty-3 {
+  border-left: 4px solid #e08a3c;
+}
+.difficulty-4 {
+  border-left: 4px solid #c4574c;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.word {
+  padding: 1rem 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.word:hover {
+  border-color: var(--accent);
+}
+
+.word.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #17130a;
+}
+
+.controls {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.controls button {
+  flex: 1 1 auto;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.controls button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.mistakes {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.banner {
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.win {
+  background: #23402a;
+}
+
+.lose {
+  background: #402323;
+}
+
+.error {
+  color: #ff9a8f;
+}
