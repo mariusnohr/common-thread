@@ -42,7 +42,18 @@ describe.skipIf(!hasTestDatabase())("submitGuess", () => {
       secondGroup.words[1],
     ]);
 
-    expect(result).toEqual({ ok: true, correct: false });
+    expect(result).toEqual({ ok: true, correct: false, oneAway: false });
+  });
+
+  it("tells the player when three of four words share a group", async () => {
+    const id = await insertPuzzle(todayInOslo(), puzzle);
+
+    const result = await submitGuess(id, [
+      ...firstGroup.words.slice(0, 3),
+      secondGroup.words[0],
+    ]);
+
+    expect(result).toEqual({ ok: true, correct: false, oneAway: true });
   });
 
   it("rejects words that are not part of the puzzle", async () => {

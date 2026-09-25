@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { APP_NAME } from "@/lib/brand";
 import { logout } from "./actions";
 import {
   SESSION_COOKIE_NAME,
@@ -22,7 +23,7 @@ export default async function AdminLayout({
           <h1>
             <Link href="/admin">Admin</Link>
           </h1>
-          <p className="date">Common Thread</p>
+          <p className="date">{APP_NAME}</p>
         </div>
         {isSignedIn && (
           <form action={logout}>

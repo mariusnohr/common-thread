@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { LoginForm } from "./login-form";
+import { APP_NAME } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  title: "Logg inn · Common Thread",
+  title: `Logg inn · ${APP_NAME}`,
 };
 
 export default function AdminLoginPage() {

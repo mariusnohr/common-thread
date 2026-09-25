@@ -1,12 +1,14 @@
 "use server";
 
+import { isOneAway, sameWordSet } from "@/lib/puzzle/guess";
 import { todayInOslo } from "@/lib/puzzle/oslo";
 import { getPlayablePuzzle } from "@/lib/puzzle/queries";
 import type { PublicGroup } from "@/lib/puzzle/types";
 
 export type SubmitGuessResult =
   | { ok: true; correct: true; group: PublicGroup }
-  | { ok: true; correct: false }
+  /** `oneAway` is true when three of the four words share a group. */
+  | { ok: true; correct: false; oneAway: boolean }
   | { ok: false; error: string };
 
 export type RevealPuzzleResult =
@@ -14,12 +16,6 @@ export type RevealPuzzleResult =
   | { ok: false; error: string };
 
 const WORDS_PER_GUESS = 4;
-
-function sameWordSet(a: string[], b: string[]): boolean {
-  if (a.length !== b.length) return false;
-  const set = new Set(a);
-  return b.every((word) => set.has(word));
-}
 
 /**
  * Checks a guess on the server. The client only knows the 16 words, never
@@ -55,7 +51,9 @@ export async function submitGuess(
   const group = puzzle.groups.find((candidate) =>
     sameWordSet(candidate.words, words),
   );
-  if (!group) return { ok: true, correct: false };
+  if (!group) {
+    return { ok: true, correct: false, oneAway: isOneAway(puzzle.groups, words) };
+  }
 
   return { ok: true, correct: true, group };
 }
