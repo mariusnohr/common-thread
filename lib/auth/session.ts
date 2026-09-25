@@ -1,4 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { assertSessionSecret } from "./secret";
+
+export { assertSessionSecret };
 
 /**
  * The admin session cookie is a signed, stateless token: a base64url-encoded
@@ -15,23 +18,6 @@ export type SessionPayload = {
   /** Unix epoch milliseconds after which the session is invalid. */
   exp: number;
 };
-
-/**
- * Reads and validates `SESSION_SECRET`. The app refuses to sign or verify
- * sessions without a secret of at least 32 bytes, rather than silently
- * accepting forgeable cookies. Also called from `instrumentation.ts` so an
- * invalid configuration stops the server before it serves any request.
- */
-export function assertSessionSecret(): string {
-  const secret = process.env.SESSION_SECRET;
-  if (!secret) {
-    throw new Error("SESSION_SECRET is not set");
-  }
-  if (Buffer.byteLength(secret, "utf8") < 32) {
-    throw new Error("SESSION_SECRET must be at least 32 bytes");
-  }
-  return secret;
-}
 
 function sign(payload: string): string {
   return createHmac("sha256", assertSessionSecret())
