@@ -23,6 +23,10 @@ function seedFromString(value: string): number {
   return hash >>> 0;
 }
 
+/**
+ * Deterministic shuffle for a known seed. Used for tests and for callers that
+ * explicitly want a stable order.
+ */
 export function shuffleWords(words: string[], seed: string): string[] {
   const result = [...words];
   const random = mulberry32(seedFromString(seed));
@@ -31,4 +35,12 @@ export function shuffleWords(words: string[], seed: string): string[] {
     [result[i], result[j]] = [result[j], result[i]];
   }
   return result;
+}
+
+/**
+ * An unpredictable per-request seed. The daily page uses this so the order in
+ * the RSC payload cannot be reversed to recover the hidden groups.
+ */
+export function randomSeed(): string {
+  return crypto.randomUUID();
 }
