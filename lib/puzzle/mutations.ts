@@ -31,13 +31,23 @@ const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 const STATUSES: readonly PuzzleStatus[] = ["suggested", "draft", "approved"];
 
-/** Postgres unique-violation SQLSTATE, e.g. two puzzles on the same day. */
+/**
+ * Postgres unique-violation SQLSTATE, e.g. two puzzles on the same day.
+ * Drizzle wraps driver errors, so walk the `cause` chain looking for it.
+ */
 function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    (error as { code?: unknown }).code === "23505"
-  );
+  let current: unknown = error;
+  for (let depth = 0; depth < 5 && current !== undefined; depth += 1) {
+    if (
+      typeof current === "object" &&
+      current !== null &&
+      (current as { code?: unknown }).code === "23505"
+    ) {
+      return true;
+    }
+    current = (current as { cause?: unknown }).cause;
+  }
+  return false;
 }
 
 function isValidDate(value: string): boolean {
