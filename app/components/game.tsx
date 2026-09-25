@@ -32,6 +32,13 @@ export function Game({ puzzleId, words }: GameProps) {
       }
       if (result.correct) {
         dispatch({ type: "solve", group: result.group });
+      } else if (state.mistakes + 1 >= MAX_MISTAKES) {
+        // Out of attempts: show the remaining groups.
+        dispatch({ type: "wrong" });
+        const revealed = await revealPuzzle(puzzleId);
+        if (revealed.ok) {
+          dispatch({ type: "reveal", groups: revealed.groups });
+        }
       } else {
         dispatch({ type: "wrong" });
       }
