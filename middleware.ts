@@ -60,7 +60,9 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
   if (await hasValidSession(token)) return NextResponse.next();
 
-  return NextResponse.redirect(new URL("/admin/login", request.url));
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? request.nextUrl.host;
+  const proto = request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", "");
+  return NextResponse.redirect(new URL("/admin/login", `${proto}://${host}`));
 }
 
 export const config = {
