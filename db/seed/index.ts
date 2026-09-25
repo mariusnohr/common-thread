@@ -1,11 +1,15 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { savePuzzle } from "../../lib/puzzle/mutations";
 import { puzzleSchema, type PuzzleInput } from "../../lib/puzzle/schema";
+import type { PuzzleLevel } from "../../lib/puzzle/types";
 import { db, pool } from "../client";
 import { puzzles } from "../schema";
 import { seedPuzzles } from "./puzzles";
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+/** The seed puzzles are simple, so they fill the easy slot of each day. */
+const SEED_LEVEL: PuzzleLevel = "easy";
 
 function addDays(isoDate: string, days: number): string {
   const [year, month, day] = isoDate.split("-").map(Number);
@@ -14,9 +18,10 @@ function addDays(isoDate: string, days: number): string {
 }
 
 /**
- * Inserts or refreshes one puzzle keyed by its `publish_date`, so running the
- * seed repeatedly never creates duplicates and picks up edited seed data. The
- * write itself goes through the same `savePuzzle` the admin uses.
+ * Inserts or refreshes one puzzle keyed by its `(publish_date, level)`, so
+ * running the seed repeatedly never creates duplicates and picks up edited
+ * seed data. The write itself goes through the same `savePuzzle` the admin
+ * uses.
  */
 async function upsertPuzzle(
   publishDate: string,
@@ -25,12 +30,15 @@ async function upsertPuzzle(
   const [existing] = await db
     .select({ id: puzzles.id })
     .from(puzzles)
-    .where(eq(puzzles.publishDate, publishDate))
+    .where(
+      and(eq(puzzles.publishDate, publishDate), eq(puzzles.level, SEED_LEVEL)),
+    )
     .limit(1);
 
   const result = await savePuzzle({
     id: existing?.id,
     publishDate,
+    level: SEED_LEVEL,
     status: "approved",
     groups: puzzle.groups,
   });
@@ -56,7 +64,7 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `Seeded ${puzzlesToSeed.length} approved puzzles from ${puzzlesToSeed[0].publishDate} to ${puzzlesToSeed.at(-1)!.publishDate}.`,
+    `Seeded ${puzzlesToSeed.length} approved ${SEED_LEVEL} puzzles from ${puzzlesToSeed[0].publishDate} to ${puzzlesToSeed.at(-1)!.publishDate}.`,
   );
   await pool.end();
 }

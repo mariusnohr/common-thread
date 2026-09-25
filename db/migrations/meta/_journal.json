@@ -8,6 +8,13 @@
       "when": 1790351800927,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790365397050,
+      "tag": "0001_puzzle_levels",
+      "breakpoints": true
     }
   ]
 }

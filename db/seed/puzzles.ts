@@ -1,7 +1,7 @@
 import type { PuzzleData } from "../../lib/puzzle/types";
 
 /**
- * The ten puzzles scheduled from `LAUNCH_DATE`, one per consecutive day.
+ * The ten easy puzzles scheduled from `LAUNCH_DATE`, one per consecutive day.
  * Every group has four words and every puzzle has 16 unique words; this is
  * enforced by `lib/puzzle/schema.ts` (and by a test) before seeding.
  */

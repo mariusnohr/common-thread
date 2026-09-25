@@ -1,9 +1,12 @@
 import Link from "next/link";
+import { GenerateForm } from "./generate-form";
 import { StatusForm } from "./status-form";
+import { describeAiConfig } from "@/lib/ai/model";
+import { LEVEL_LABELS, PUZZLE_LEVELS } from "@/lib/puzzle/levels";
 import { puzzleNumberForDate } from "@/lib/puzzle/number";
 import { addDays, todayInOslo } from "@/lib/puzzle/oslo";
 import { listPuzzles } from "@/lib/puzzle/queries";
-import type { PuzzleStatus } from "@/lib/puzzle/types";
+import type { PuzzleLevel, PuzzleStatus } from "@/lib/puzzle/types";
 
 export const dynamic = "force-dynamic";
 
@@ -15,21 +18,37 @@ const STATUS_LABELS: Record<PuzzleStatus, string> = {
 
 const UPCOMING_DAYS = 30;
 
+type OpenSlot = {
+  level: PuzzleLevel;
+  /** Status of the puzzle waiting in the slot, or `null` if it is empty. */
+  status: PuzzleStatus | null;
+};
+
 export default async function AdminOverviewPage() {
   const puzzles = await listPuzzles();
   const launchDate = process.env.LAUNCH_DATE;
   const today = todayInOslo();
 
-  const approvedDates = new Set(
-    puzzles
-      .filter((puzzle) => puzzle.status === "approved")
-      .map((puzzle) => puzzle.publishDate),
+  const statusBySlot = new Map(
+    puzzles.map((puzzle) => [
+      `${puzzle.publishDate}:${puzzle.level}`,
+      puzzle.status,
+    ]),
   );
 
-  const missingDates: string[] = [];
+  // Every upcoming day/level without an approved puzzle.
+  const openDays: { date: string; slots: OpenSlot[] }[] = [];
+  let firstEmpty: { date: string; level: PuzzleLevel } | null = null;
   for (let offset = 0; offset < UPCOMING_DAYS; offset += 1) {
     const date = addDays(today, offset);
-    if (!approvedDates.has(date)) missingDates.push(date);
+    const slots: OpenSlot[] = [];
+    for (const level of PUZZLE_LEVELS) {
+      const status = statusBySlot.get(`${date}:${level}`) ?? null;
+      if (status === "approved") continue;
+      slots.push({ level, status });
+      if (status === null) firstEmpty ??= { date, level };
+    }
+    if (slots.length > 0) openDays.push({ date, slots });
   }
 
   return (
@@ -40,14 +59,36 @@ export default async function AdminOverviewPage() {
         </Link>
       </div>
 
-      {missingDates.length > 0 ? (
+      <GenerateForm
+        ai={describeAiConfig()}
+        defaultDate={firstEmpty?.date ?? today}
+        defaultLevel={firstEmpty?.level ?? "easy"}
+      />
+
+      {openDays.length > 0 ? (
         <div className="notice">
-          <strong>Dager uten godkjent oppgave neste 30 dager:</strong>{" "}
-          {missingDates.join(", ")}
+          <strong>Uten godkjent oppgave de neste 30 dagene:</strong>
+          <ul className="open-slots">
+            {openDays.map(({ date, slots }) => (
+              <li key={date}>
+                <span className="open-date">{date}</span>{" "}
+                {slots.length === PUZZLE_LEVELS.length &&
+                slots.every((slot) => slot.status === null)
+                  ? "alle nivåer"
+                  : slots
+                      .map((slot) =>
+                        slot.status
+                          ? `${LEVEL_LABELS[slot.level].toLowerCase()} (${STATUS_LABELS[slot.status].toLowerCase()})`
+                          : LEVEL_LABELS[slot.level].toLowerCase(),
+                      )
+                      .join(", ")}
+              </li>
+            ))}
+          </ul>
         </div>
       ) : (
         <div className="notice ok">
-          Alle de neste 30 dagene har en godkjent oppgave.
+          Alle nivåer har en godkjent oppgave de neste 30 dagene.
         </div>
       )}
 
@@ -59,6 +100,7 @@ export default async function AdminOverviewPage() {
             <tr>
               <th>Dato</th>
               <th>Nr.</th>
+              <th>Nivå</th>
               <th>Status</th>
               <th>Grupper</th>
               <th />
@@ -73,6 +115,7 @@ export default async function AdminOverviewPage() {
                   </Link>
                 </td>
                 <td>{puzzleNumberForDate(launchDate, puzzle.publishDate) ?? "–"}</td>
+                <td>{LEVEL_LABELS[puzzle.level]}</td>
                 <td>
                   <span className={`status status-${puzzle.status}`}>
                     {STATUS_LABELS[puzzle.status]}

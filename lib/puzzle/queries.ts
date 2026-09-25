@@ -1,7 +1,12 @@
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db/client";
 import { puzzleGroups, puzzles } from "@/db/schema";
-import type { AdminPuzzle, PublicGroup, PuzzleForDate } from "./types";
+import type {
+  AdminPuzzle,
+  PublicGroup,
+  PuzzleForDate,
+  PuzzleLevel,
+} from "./types";
 
 async function loadGroups(puzzleId: number): Promise<PublicGroup[]> {
   const rows = await db
@@ -24,22 +29,38 @@ async function loadGroups(puzzleId: number): Promise<PublicGroup[]> {
 function toPuzzle(row: {
   id: number;
   publishDate: string;
+  level: PuzzleLevel;
 }, groups: PublicGroup[]): PuzzleForDate {
   return {
     id: row.id,
     publishDate: row.publishDate,
+    level: row.level,
     words: groups.flatMap((group) => group.words),
     groups,
   };
 }
 
-/** The approved puzzle published on `date`, or `null` if there is none. */
-export async function getPuzzleForDate(date: string): Promise<PuzzleForDate | null> {
+/**
+ * The approved puzzle published on `date` at `level`, or `null` if there is
+ * none.
+ */
+export async function getPuzzleForDate(
+  date: string,
+  level: PuzzleLevel,
+): Promise<PuzzleForDate | null> {
   const [row] = await db
-    .select({ id: puzzles.id, publishDate: puzzles.publishDate })
+    .select({
+      id: puzzles.id,
+      publishDate: puzzles.publishDate,
+      level: puzzles.level,
+    })
     .from(puzzles)
     .where(
-      and(eq(puzzles.publishDate, date), eq(puzzles.status, "approved")),
+      and(
+        eq(puzzles.publishDate, date),
+        eq(puzzles.level, level),
+        eq(puzzles.status, "approved"),
+      ),
     )
     .limit(1);
 
@@ -47,6 +68,34 @@ export async function getPuzzleForDate(date: string): Promise<PuzzleForDate | nu
 
   const groups = await loadGroups(row.id);
   return toPuzzle(row, groups);
+}
+
+/** The id of the puzzle (any status) in a `(date, level)` slot, if any. */
+export async function findPuzzleId(
+  date: string,
+  level: PuzzleLevel,
+): Promise<number | null> {
+  const [row] = await db
+    .select({ id: puzzles.id })
+    .from(puzzles)
+    .where(and(eq(puzzles.publishDate, date), eq(puzzles.level, level)))
+    .limit(1);
+
+  return row?.id ?? null;
+}
+
+/** The levels that have an approved puzzle on `date`, easiest first. */
+export async function getApprovedLevelsForDate(
+  date: string,
+): Promise<PuzzleLevel[]> {
+  const rows = await db
+    .select({ level: puzzles.level })
+    .from(puzzles)
+    .where(and(eq(puzzles.publishDate, date), eq(puzzles.status, "approved")))
+    // Postgres sorts enums in declaration order: easy, medium, hard.
+    .orderBy(asc(puzzles.level));
+
+  return rows.map((row) => row.level);
 }
 
 /**
@@ -61,6 +110,7 @@ export async function getPlayablePuzzle(
     .select({
       id: puzzles.id,
       publishDate: puzzles.publishDate,
+      level: puzzles.level,
       status: puzzles.status,
     })
     .from(puzzles)
@@ -80,6 +130,7 @@ export async function getPuzzleById(id: number): Promise<AdminPuzzle | null> {
     .select({
       id: puzzles.id,
       publishDate: puzzles.publishDate,
+      level: puzzles.level,
       status: puzzles.status,
     })
     .from(puzzles)
@@ -91,30 +142,64 @@ export async function getPuzzleById(id: number): Promise<AdminPuzzle | null> {
   return {
     id: row.id,
     publishDate: row.publishDate,
+    level: row.level,
     status: row.status,
     groups: await loadGroups(row.id),
   };
 }
 
-/** Every puzzle, newest first, for the admin overview. */
+/** Every puzzle, newest first and easiest first within a day. */
 export async function listPuzzles(): Promise<AdminPuzzle[]> {
   const rows = await db
     .select({
       id: puzzles.id,
       publishDate: puzzles.publishDate,
+      level: puzzles.level,
       status: puzzles.status,
     })
     .from(puzzles)
-    .orderBy(desc(puzzles.publishDate));
+    .orderBy(desc(puzzles.publishDate), asc(puzzles.level));
 
   const result: AdminPuzzle[] = [];
   for (const row of rows) {
     result.push({
       id: row.id,
       publishDate: row.publishDate,
+      level: row.level,
       status: row.status,
       groups: await loadGroups(row.id),
     });
   }
   return result;
+}
+
+/**
+ * Group names from the most recent puzzles (any status), newest first. Fed to
+ * the generator so it avoids repeating themes. `excludeId` leaves out the
+ * puzzle that is about to be regenerated.
+ */
+export async function listRecentGroupNames(
+  puzzleLimit: number,
+  excludeId?: number,
+): Promise<string[]> {
+  const recent = await db
+    .select({ id: puzzles.id })
+    .from(puzzles)
+    .orderBy(desc(puzzles.publishDate), desc(puzzles.id))
+    .limit(puzzleLimit + 1);
+
+  const ids = recent
+    .map((row) => row.id)
+    .filter((id) => id !== excludeId)
+    .slice(0, puzzleLimit);
+  if (ids.length === 0) return [];
+
+  const rows = await db
+    .select({ name: puzzleGroups.name })
+    .from(puzzleGroups)
+    .innerJoin(puzzles, eq(puzzles.id, puzzleGroups.puzzleId))
+    .where(inArray(puzzleGroups.puzzleId, ids))
+    .orderBy(desc(puzzles.publishDate), asc(puzzleGroups.difficulty));
+
+  return [...new Set(rows.map((row) => row.name))];
 }

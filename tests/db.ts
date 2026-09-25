@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { db } from "@/db/client";
 import { puzzleGroups, puzzles } from "@/db/schema";
-import type { PuzzleData } from "@/lib/puzzle/types";
+import type { PuzzleData, PuzzleLevel } from "@/lib/puzzle/types";
 
 let migrationPromise: Promise<void> | null = null;
 
@@ -39,10 +39,11 @@ export async function insertPuzzle(
   publishDate: string,
   puzzle: PuzzleData,
   status: "suggested" | "draft" | "approved" = "approved",
+  level: PuzzleLevel = "easy",
 ): Promise<number> {
   const [row] = await db
     .insert(puzzles)
-    .values({ publishDate, status })
+    .values({ publishDate, level, status })
     .returning({ id: puzzles.id });
 
   await db.insert(puzzleGroups).values(

@@ -3,6 +3,12 @@ export type Difficulty = 1 | 2 | 3 | 4;
 /** Mirrors the `puzzle_status` Postgres enum in `db/schema.ts`. */
 export type PuzzleStatus = "suggested" | "draft" | "approved";
 
+/**
+ * Mirrors the `puzzle_level` Postgres enum in `db/schema.ts`: how hard a whole
+ * puzzle is. Each day has one puzzle per level.
+ */
+export type PuzzleLevel = "easy" | "medium" | "hard";
+
 /** A single category inside a puzzle, as stored in `db/seed/puzzles.ts`. */
 export type PuzzleGroupData = {
   difficulty: Difficulty;
@@ -26,6 +32,7 @@ export type PublicGroup = {
 export type PuzzleForDate = {
   id: number;
   publishDate: string;
+  level: PuzzleLevel;
   words: string[];
   groups: PublicGroup[];
 };
@@ -34,6 +41,7 @@ export type PuzzleForDate = {
 export type AdminPuzzle = {
   id: number;
   publishDate: string;
+  level: PuzzleLevel;
   status: PuzzleStatus;
   groups: PublicGroup[];
 };

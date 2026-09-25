@@ -4,8 +4,13 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { savePuzzleAction } from "@/app/admin/actions";
 import { EMPTY_FORM_STATE, type FormState } from "@/app/admin/form-state";
+import { LEVEL_LABELS, PUZZLE_LEVELS } from "@/lib/puzzle/levels";
 import { todayInOslo } from "@/lib/puzzle/oslo";
-import type { AdminPuzzle, PuzzleStatus } from "@/lib/puzzle/types";
+import type {
+  AdminPuzzle,
+  PuzzleLevel,
+  PuzzleStatus,
+} from "@/lib/puzzle/types";
 
 type PuzzleFormProps = {
   puzzle?: AdminPuzzle;
@@ -62,6 +67,22 @@ export function PuzzleForm({ puzzle }: PuzzleFormProps) {
             required
           />
           <FieldError state={state} name="publishDate" />
+        </div>
+
+        <div className="field">
+          <label htmlFor="level">Nivå</label>
+          <select
+            id="level"
+            name="level"
+            defaultValue={puzzle?.level ?? ("easy" satisfies PuzzleLevel)}
+          >
+            {PUZZLE_LEVELS.map((level) => (
+              <option key={level} value={level}>
+                {LEVEL_LABELS[level]}
+              </option>
+            ))}
+          </select>
+          <FieldError state={state} name="level" />
         </div>
 
         <div className="field">

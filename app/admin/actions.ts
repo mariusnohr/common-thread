@@ -11,18 +11,30 @@ import {
   verifyPassword,
   verifySessionToken,
 } from "@/lib/auth/session";
+import { generatePuzzle } from "@/lib/ai/generate-puzzle";
+import { AiConfigError, formatModelSpec, resolveModel } from "@/lib/ai/model";
+import { isPuzzleLevel, LEVEL_LABELS } from "@/lib/puzzle/levels";
 import {
   isValidPublishDate,
   savePuzzle,
   setPuzzleStatus,
 } from "@/lib/puzzle/mutations";
+import {
+  findPuzzleId,
+  getPuzzleById,
+  listRecentGroupNames,
+} from "@/lib/puzzle/queries";
 import { puzzleSchema } from "@/lib/puzzle/schema";
 import type {
   Difficulty,
   PuzzleGroupData,
+  PuzzleLevel,
   PuzzleStatus,
 } from "@/lib/puzzle/types";
 import type { FormState, LoginState } from "./form-state";
+
+/** How many recent puzzles' group names the generator is told to avoid. */
+const AVOID_RECENT_PUZZLES = 45;
 
 const GROUP_COUNT = 4;
 const WORDS_PER_GROUP = 4;
@@ -52,6 +64,7 @@ function collectFieldErrors(error: z.ZodError): Record<string, string> {
 function parsePuzzleForm(formData: FormData): {
   groups: PuzzleGroupData[];
   publishDate: string;
+  level: string;
   status: string;
   rawId: string;
 } {
@@ -70,6 +83,7 @@ function parsePuzzleForm(formData: FormData): {
   return {
     groups,
     publishDate: String(formData.get("publishDate") ?? "").trim(),
+    level: String(formData.get("level") ?? ""),
     status: String(formData.get("status") ?? ""),
     rawId: String(formData.get("id") ?? "").trim(),
   };
@@ -113,11 +127,15 @@ export async function savePuzzleAction(
 ): Promise<FormState> {
   await assertSession();
 
-  const { groups, publishDate, status, rawId } = parsePuzzleForm(formData);
+  const { groups, publishDate, level, status, rawId } =
+    parsePuzzleForm(formData);
 
   const fieldErrors: Record<string, string> = {};
   if (!isValidPublishDate(publishDate)) {
     fieldErrors.publishDate = "Datoen må være en gyldig dato (ÅÅÅÅ-MM-DD).";
+  }
+  if (!isPuzzleLevel(level)) {
+    fieldErrors.level = "Velg et gyldig nivå.";
   }
   if (!STATUSES.includes(status as PuzzleStatus)) {
     fieldErrors.status = "Velg en gyldig status.";
@@ -140,6 +158,7 @@ export async function savePuzzleAction(
   const result = await savePuzzle({
     id,
     publishDate,
+    level: level as PuzzleLevel,
     status: status as PuzzleStatus,
     groups: parsed.data.groups,
   });
@@ -151,6 +170,98 @@ export async function savePuzzleAction(
   revalidatePath("/");
   revalidatePath("/admin");
   redirect("/admin");
+}
+
+function formError(message: string): FormState {
+  return { status: "error", fieldErrors: {}, formError: message };
+}
+
+/**
+ * Generates a puzzle with the configured AI model and saves it as
+ * `suggested`, then opens it in the editor for review. Nothing goes live until
+ * it is approved.
+ *
+ * - Without `id`: fills an empty `(publishDate, level)` slot.
+ * - With `id`: replaces the groups of an existing puzzle that is not approved
+ *   (keeping its date and level).
+ */
+export async function generatePuzzleAction(
+  _previous: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  await assertSession();
+
+  const rawId = String(formData.get("id") ?? "").trim();
+  let id: number | undefined;
+  let publishDate: string;
+  let level: PuzzleLevel;
+
+  if (rawId !== "") {
+    id = Number(rawId);
+    if (!Number.isInteger(id) || id <= 0) return formError("Ugyldig oppgave.");
+
+    const existing = await getPuzzleById(id);
+    if (!existing) return formError("Fant ikke oppgaven.");
+    if (existing.status === "approved") {
+      return formError(
+        "Godkjente oppgaver kan ikke genereres på nytt. Sett den til utkast først.",
+      );
+    }
+    publishDate = existing.publishDate;
+    level = existing.level;
+  } else {
+    publishDate = String(formData.get("publishDate") ?? "").trim();
+    const rawLevel = String(formData.get("level") ?? "");
+
+    const fieldErrors: Record<string, string> = {};
+    if (!isValidPublishDate(publishDate)) {
+      fieldErrors.publishDate = "Datoen må være en gyldig dato (ÅÅÅÅ-MM-DD).";
+    }
+    if (!isPuzzleLevel(rawLevel)) fieldErrors.level = "Velg et gyldig nivå.";
+    if (Object.keys(fieldErrors).length > 0 || !isPuzzleLevel(rawLevel)) {
+      return { status: "error", fieldErrors };
+    }
+    level = rawLevel;
+
+    // Check before calling the model so a taken slot costs no tokens.
+    if ((await findPuzzleId(publishDate, level)) !== null) {
+      return formError(
+        `Det finnes allerede en oppgave på nivå «${LEVEL_LABELS[level].toLowerCase()}» ${publishDate}. Åpne den for å generere på nytt.`,
+      );
+    }
+  }
+
+  let resolved: ReturnType<typeof resolveModel>;
+  try {
+    resolved = resolveModel();
+  } catch (error) {
+    if (error instanceof AiConfigError) return formError(error.message);
+    throw error;
+  }
+
+  const avoidThemes = await listRecentGroupNames(AVOID_RECENT_PUZZLES, id);
+  const generated = await generatePuzzle({
+    level,
+    model: resolved.model,
+    avoidThemes,
+  });
+  if (!generated.ok) return formError(generated.error);
+
+  console.info(
+    `Generated ${level} puzzle for ${publishDate} with ${formatModelSpec(resolved.spec)} in ${generated.attempts} attempt(s)`,
+  );
+
+  const saved = await savePuzzle({
+    id,
+    publishDate,
+    level,
+    status: "suggested",
+    groups: generated.groups,
+  });
+  if (!saved.ok) return formError(saved.error);
+
+  revalidatePath("/admin");
+  redirect(`/admin/puzzles/${saved.id}?generert=1`);
 }
 
 /** Approves, drafts or marks a puzzle as suggested from the overview. */

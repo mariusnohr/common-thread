@@ -1,13 +1,15 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { puzzleGroups, puzzles } from "@/db/schema";
+import { isPuzzleLevel, LEVEL_LABELS } from "./levels";
 import { puzzleSchema } from "./schema";
-import type { PuzzleStatus } from "./types";
+import type { PuzzleLevel, PuzzleStatus } from "./types";
 
 export type SavePuzzleInput = {
   /** When set the puzzle is updated in place; otherwise a new row is created. */
   id?: number;
   publishDate: string;
+  level: PuzzleLevel;
   status: PuzzleStatus;
   groups: PuzzleGroupInput[];
 };
@@ -32,7 +34,8 @@ const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const STATUSES: readonly PuzzleStatus[] = ["suggested", "draft", "approved"];
 
 /**
- * Postgres unique-violation SQLSTATE, e.g. two puzzles on the same day.
+ * Postgres unique-violation SQLSTATE, e.g. two puzzles on the same day and
+ * level.
  * Drizzle wraps driver errors, so walk the `cause` chain looking for it.
  */
 function isUniqueViolation(error: unknown): boolean {
@@ -69,15 +72,19 @@ export function isValidPublishDate(value: string): boolean {
 /**
  * Creates or updates a puzzle and replaces its groups in a single
  * transaction. Validation runs before any write, so an invalid puzzle leaves
- * the database untouched. A `publish_date` collision (including moving an
- * existing puzzle onto an occupied date) is reported as a readable error
- * rather than a raw unique-violation.
+ * the database untouched. A `(publish_date, level)` collision (including
+ * moving an existing puzzle onto an occupied slot) is reported as a readable
+ * error rather than a raw unique-violation.
  */
 export async function savePuzzle(
   input: SavePuzzleInput,
 ): Promise<PuzzleMutationResult> {
   if (!isValidDate(input.publishDate)) {
     return { ok: false, error: "Datoen må være på formen ÅÅÅÅ-MM-DD." };
+  }
+
+  if (!isPuzzleLevel(input.level)) {
+    return { ok: false, error: "Ugyldig nivå." };
   }
 
   if (!STATUSES.includes(input.status)) {
@@ -101,7 +108,11 @@ export async function savePuzzle(
       if (puzzleId !== undefined) {
         const [updated] = await tx
           .update(puzzles)
-          .set({ publishDate: input.publishDate, status: input.status })
+          .set({
+            publishDate: input.publishDate,
+            level: input.level,
+            status: input.status,
+          })
           .where(eq(puzzles.id, puzzleId))
           .returning({ id: puzzles.id });
 
@@ -113,7 +124,11 @@ export async function savePuzzle(
       } else {
         const [inserted] = await tx
           .insert(puzzles)
-          .values({ publishDate: input.publishDate, status: input.status })
+          .values({
+            publishDate: input.publishDate,
+            level: input.level,
+            status: input.status,
+          })
           .returning({ id: puzzles.id });
         puzzleId = inserted.id;
       }
@@ -135,7 +150,7 @@ export async function savePuzzle(
     if (isUniqueViolation(error)) {
       return {
         ok: false,
-        error: "Det finnes allerede en oppgave på denne datoen.",
+        error: `Det finnes allerede en oppgave på nivå «${LEVEL_LABELS[input.level].toLowerCase()}» på denne datoen.`,
       };
     }
     if (error instanceof Error && error.message === "PuzzleNotFound") {
