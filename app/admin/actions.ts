@@ -92,6 +92,8 @@ export async function login(
 
 /** Clears the session cookie. */
 export async function logout(): Promise<void> {
+  await assertSession();
+
   const store = await cookies();
   store.set(SESSION_COOKIE_NAME, "", {
     ...sessionCookieOptions(),
