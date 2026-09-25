@@ -50,6 +50,23 @@ kjøres med `pnpm db:migrate` ved hver deploy, før appen restartes. En dag
 representeres som `date` med `UNIQUE`, så databasen garanterer maks én oppgave
 per dag.
 
+## Admin
+
+Eieren logger inn på `/admin/login` med `ADMIN_PASSWORD` og får en signert,
+HttpOnly-cookie (7 dager) som bare gjelder under `/admin`. Cookien signeres med
+HMAC-SHA256 ved hjelp av `SESSION_SECRET`, som må være minst 32 byte. Mangler
+eller er hemmeligheten for kort, nekter appen å starte.
+
+- `/admin` viser alle oppgaver med dato, nummer, status og gruppenavn, og
+  markerer dager de neste 30 dagene som mangler en godkjent oppgave.
+- `/admin/puzzles/new` og `/admin/puzzles/[id]` lager og redigerer en oppgave:
+  dato, status (`suggested`, `draft`, `approved`) og fire grupper med fire ord
+  hver. Feil vises ved riktig felt, og ingenting skrives før alt er gyldig.
+- Bare oppgaver med status `approved` vises på `/`. Endrer du en oppgave til
+  `draft`, forsvinner den ved neste sidevisning.
+- `pnpm db:seed` bruker samme lagringsfunksjon (`savePuzzle`), så seed og admin
+  oppfører seg likt og kan kjøres flere ganger uten duplikater.
+
 ## Deploy
 
 ```bash

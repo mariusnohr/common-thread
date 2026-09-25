@@ -1,7 +1,7 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { puzzleGroups, puzzles } from "@/db/schema";
-import type { PublicGroup, PuzzleForDate } from "./types";
+import type { AdminPuzzle, PublicGroup, PuzzleForDate } from "./types";
 
 async function loadGroups(puzzleId: number): Promise<PublicGroup[]> {
   const rows = await db
@@ -72,4 +72,49 @@ export async function getPlayablePuzzle(
 
   const groups = await loadGroups(row.id);
   return toPuzzle(row, groups);
+}
+
+/** A single puzzle with its status and groups, for the admin editor. */
+export async function getPuzzleById(id: number): Promise<AdminPuzzle | null> {
+  const [row] = await db
+    .select({
+      id: puzzles.id,
+      publishDate: puzzles.publishDate,
+      status: puzzles.status,
+    })
+    .from(puzzles)
+    .where(eq(puzzles.id, id))
+    .limit(1);
+
+  if (!row) return null;
+
+  return {
+    id: row.id,
+    publishDate: row.publishDate,
+    status: row.status,
+    groups: await loadGroups(row.id),
+  };
+}
+
+/** Every puzzle, newest first, for the admin overview. */
+export async function listPuzzles(): Promise<AdminPuzzle[]> {
+  const rows = await db
+    .select({
+      id: puzzles.id,
+      publishDate: puzzles.publishDate,
+      status: puzzles.status,
+    })
+    .from(puzzles)
+    .orderBy(desc(puzzles.publishDate));
+
+  const result: AdminPuzzle[] = [];
+  for (const row of rows) {
+    result.push({
+      id: row.id,
+      publishDate: row.publishDate,
+      status: row.status,
+      groups: await loadGroups(row.id),
+    });
+  }
+  return result;
 }
