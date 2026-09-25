@@ -55,7 +55,7 @@ per dag.
 Eieren logger inn på `/admin/login` med `ADMIN_PASSWORD` og får en signert,
 HttpOnly-cookie (7 dager) som bare gjelder under `/admin`. Cookien signeres med
 HMAC-SHA256 ved hjelp av `SESSION_SECRET`, som må være minst 32 byte. Mangler
-eller er hemmeligheten for kort, nekter appen å lage og lese sesjoner.
+eller er hemmeligheten for kort, nekter appen å starte.
 
 - `/admin` viser alle oppgaver med dato, nummer, status og gruppenavn, og
   markerer dager de neste 30 dagene som mangler en godkjent oppgave.
