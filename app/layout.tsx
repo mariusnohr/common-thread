@@ -18,7 +18,7 @@ const display = Fredoka({
 
 export const metadata: Metadata = {
   title: APP_NAME,
-  description: "Dagens ordpuslespill: seksten ord, fire skjulte grupper.",
+  description: "Løs dagens floke: seksten ord, fire skjulte grupper.",
 };
 
 export const viewport: Viewport = {

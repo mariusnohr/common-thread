@@ -53,7 +53,7 @@ export function HelpButton() {
           </button>
           <h2 id="help-title">Slik spiller du</h2>
           <p className="lead">
-            Seksten ord skjuler fire grupper på fire. Finn tråden som binder dem sammen.
+            Seksten ord ligger i en floke. Nøst opp de fire trådene: fire grupper på fire ord som hører sammen.
           </p>
 
           <ol className="rules">

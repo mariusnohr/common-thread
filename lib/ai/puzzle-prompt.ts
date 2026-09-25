@@ -1,3 +1,5 @@
+import { APP_NAME } from "@/lib/brand";
+import { MAX_MISTAKES } from "@/lib/puzzle/reducer";
 import type { PuzzleLevel } from "@/lib/puzzle/types";
 
 /**
@@ -17,10 +19,10 @@ import type { PuzzleLevel } from "@/lib/puzzle/types";
 /** Longest word the board fits comfortably (4 columns on a phone). */
 export const MAX_WORD_LENGTH = 14;
 
-export const PUZZLE_SYSTEM_PROMPT = `You are the puzzle editor of "Common Thread", a Norwegian daily word game in the style of the New York Times' "Connections".
+export const PUZZLE_SYSTEM_PROMPT = `You are the puzzle editor of "${APP_NAME}", a Norwegian daily word game in the style of the New York Times' "Connections".
 
 ## The game
-A puzzle is 16 words that hide exactly four groups of four words. The four words in a group share one specific connection – the common thread. Players see all 16 words shuffled and try to find the groups, four words at a time, with at most four mistakes. After each correct guess the group name is revealed. There is a new easy, medium and hard puzzle every day.
+A puzzle is 16 words that hide exactly four groups of four words. The four words in a group share one specific connection – the common thread. Players see all 16 words shuffled and try to find the groups, four words at a time, with at most ${MAX_MISTAKES} mistakes. After each correct guess the group name is revealed. There is a new easy, medium and hard puzzle every day.
 
 Everything the player sees – every word and every group name – must be in Norwegian bokmål.
 

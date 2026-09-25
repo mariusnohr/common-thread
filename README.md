@@ -1,9 +1,9 @@
-# common-thread
+# Floke
 
-Et daglig ordpuslespill: seksten ord, fire skjulte grupper på fire ord, tre
-oppgaver per dag (lett, middels og vanskelig). Siden serverer dagens oppgaver
-fra Postgres og sjekker alle gjetninger på serveren, så gruppeinndelingen
-aldri sendes til nettleseren.
+Et daglig ordpuslespill (repo: `common-thread`): seksten ord, fire skjulte
+grupper på fire ord, tre oppgaver per dag (lett, middels og vanskelig). Siden
+serverer dagens oppgaver fra Postgres og sjekker alle gjetninger på serveren,
+så gruppeinndelingen aldri sendes til nettleseren.
 
 ## Spillet
 

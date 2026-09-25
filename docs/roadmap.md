@@ -6,7 +6,7 @@
 - Reveal remaining groups on loss, per-request shuffle, puzzle number, standalone output
 - Phase 3: Admin login (signed cookie) and create/edit/approve puzzles; seed and admin share upsert logic
 - Phase 4: Easy, medium and hard puzzle per day (`puzzles.level`); AI-generated suggestions (AI SDK, Anthropic or OpenAI) saved as `suggested` and reviewed in admin
-- Phase 5: Game redesign: three lives, animated board (deal, hop, shake, FLIP glide, confetti), stars per puzzle, streak and stats, share grid, rules sheet, countdown to the next puzzles
+- Phase 5: Game redesign and rename to Floke (`APP_NAME` in `lib/brand.ts`): three lives, animated board (deal, hop, shake, FLIP glide, confetti), stars per puzzle, streak and stats, share grid, rules sheet, countdown to the next puzzles
 - Keep game progress across reloads (localStorage per puzzleId)
 - "One away" hint and ignore repeated wrong guesses
 
@@ -14,4 +14,3 @@
 
 ## Planned
 - Archive of past puzzles by number
-- Pick a Norwegian name for the game (`APP_NAME` in `lib/brand.ts`)
