@@ -179,7 +179,8 @@ export type GeneratePuzzleResult =
   | { ok: false; error: string };
 
 const DEFAULT_MAX_ATTEMPTS = 3;
-const DEFAULT_TIMEOUT_MS = 180_000;
+// Hard puzzles on reasoning-heavy models have taken well over two minutes.
+const DEFAULT_TIMEOUT_MS = 300_000;
 
 function isTimeout(error: unknown): boolean {
   return (

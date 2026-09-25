@@ -68,7 +68,7 @@ export function GenerateForm({ ai, defaultDate, defaultLevel }: GenerateFormProp
         <button type="submit" disabled={pending || !ai.ok}>
           {pending ? "Genererer …" : "Generer forslag"}
         </button>
-        {pending && <span className="muted">Dette kan ta et minutt.</span>}
+        {pending && <span className="muted">Dette kan ta et par minutter.</span>}
       </div>
     </form>
   );
@@ -101,7 +101,7 @@ export function RegenerateForm({ ai, puzzleId }: RegenerateFormProps) {
         <button type="submit" className="secondary" disabled={pending || !ai.ok}>
           {pending ? "Genererer …" : "Generer nytt forslag"}
         </button>
-        {pending && <span className="muted">Dette kan ta et minutt.</span>}
+        {pending && <span className="muted">Dette kan ta et par minutter.</span>}
         {!ai.ok && <span className="muted">{ai.error}</span>}
       </div>
       {state.formError && <p className="error">{state.formError}</p>}
