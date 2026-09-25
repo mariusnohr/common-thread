@@ -1,7 +1,8 @@
 import { eq } from "drizzle-orm";
+import { savePuzzle } from "../../lib/puzzle/mutations";
 import { puzzleSchema, type PuzzleInput } from "../../lib/puzzle/schema";
 import { db, pool } from "../client";
-import { puzzleGroups, puzzles } from "../schema";
+import { puzzles } from "../schema";
 import { seedPuzzles } from "./puzzles";
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -14,41 +15,29 @@ function addDays(isoDate: string, days: number): string {
 
 /**
  * Inserts or refreshes one puzzle keyed by its `publish_date`, so running the
- * seed repeatedly never creates duplicates and picks up edited seed data.
+ * seed repeatedly never creates duplicates and picks up edited seed data. The
+ * write itself goes through the same `savePuzzle` the admin uses.
  */
-async function upsertPuzzle(publishDate: string, puzzle: PuzzleInput): Promise<void> {
-  await db.transaction(async (tx) => {
-    const [existing] = await tx
-      .select({ id: puzzles.id })
-      .from(puzzles)
-      .where(eq(puzzles.publishDate, publishDate))
-      .limit(1);
+async function upsertPuzzle(
+  publishDate: string,
+  puzzle: PuzzleInput,
+): Promise<void> {
+  const [existing] = await db
+    .select({ id: puzzles.id })
+    .from(puzzles)
+    .where(eq(puzzles.publishDate, publishDate))
+    .limit(1);
 
-    let puzzleId: number;
-    if (existing) {
-      puzzleId = existing.id;
-      await tx
-        .update(puzzles)
-        .set({ status: "approved" })
-        .where(eq(puzzles.id, puzzleId));
-      await tx.delete(puzzleGroups).where(eq(puzzleGroups.puzzleId, puzzleId));
-    } else {
-      const [inserted] = await tx
-        .insert(puzzles)
-        .values({ publishDate, status: "approved" })
-        .returning({ id: puzzles.id });
-      puzzleId = inserted.id;
-    }
-
-    await tx.insert(puzzleGroups).values(
-      puzzle.groups.map((group) => ({
-        puzzleId,
-        difficulty: group.difficulty,
-        name: group.name,
-        words: group.words,
-      })),
-    );
+  const result = await savePuzzle({
+    id: existing?.id,
+    publishDate,
+    status: "approved",
+    groups: puzzle.groups,
   });
+
+  if (!result.ok) {
+    throw new Error(`Kunne ikke lagre oppgaven for ${publishDate}: ${result.error}`);
+  }
 }
 
 async function main(): Promise<void> {
